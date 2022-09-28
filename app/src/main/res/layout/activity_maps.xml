@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    android:name="com.google.android.gms.maps.SupportMapFragment"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MapsActivity" />
+
+    <RelativeLayout
+        android:id="@+id/menuArea"
+        android:padding="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/searchBtt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/ic_search_black_24dp"
+            app:backgroundTint="@color/button_bgc_2"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            tools:ignore="VectorDrawableCompat" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/menuBtt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/ic_menu_black_24dp"
+            app:backgroundTint="@color/button_bgc_1"
+            android:layout_alignParentBottom="true"
+            tools:ignore="VectorDrawableCompat" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/menuExtention"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+        <FrameLayout
+            android:id="@+id/fragment_container"
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </RelativeLayout>
+
+    <Button
+        android:id="@+id/toSpeed"
+        android:textSize="30sp"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="To_Speed"/>
+
+</RelativeLayout>

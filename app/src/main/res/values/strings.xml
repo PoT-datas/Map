@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Map</string>
+    <string name="title_activity_maps">Map</string>
+
+    <!--From Olivierdhon@gmail.com ::: AIzaSyAFkJ_v2klvZNrQDOcyZoW0m54ekWDda28 -->
+    <!--From michelmouafotambo@gmail.com ::: AIzaSyAj-GiOVPydE_u944nVActMsmpRRlJQcoM -->
+    <string name="google_map_key">AIzaSyAj-GiOVPydE_u944nVActMsmpRRlJQcoM</string>
+</resources>
