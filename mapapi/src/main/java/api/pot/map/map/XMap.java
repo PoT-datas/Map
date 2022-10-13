@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.net.ProxyInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -26,11 +27,47 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import api.pot.map.direction.DirectionListener;
 import api.pot.map.direction.XDirectionsParser;
 
 public class XMap {
     Context context;
     GoogleMap mMap;
+
+    public static int ZOOM_LEVEL_WORLD = 1;
+    public static int ZOOM_LEVEL_CONTINENT = 5;
+    public static int ZOOM_LEVEL_CITY = 10;
+    public static int ZOOM_LEVEL_STREETS = 15;
+    public static int ZOOM_LEVEL_USER = 18;
+    public static int ZOOM_LEVEL_NAVIGATION = 20;
+    public static int ZOOM_LEVEL_BUILDINGS = 20;
+
+    private int directionWidth = 15;
+    private int directionColor = Color.BLUE;
+    private PolylineOptions polylineOptions;
+
+    private DirectionListener directionListener;
+
+    public void setDirectionWidth(int directionWidth) {
+        this.directionWidth = directionWidth;
+        notifyDirection();
+    }
+
+    public void setDirectionColor(int directionColor) {
+        this.directionColor = directionColor;
+        notifyDirection();
+    }
+
+    public void notifyDirection() {
+        if(polylineOptions==null) return;
+        polylineOptions.width(directionWidth);
+        polylineOptions.color(directionColor);
+        mMap.addPolyline(polylineOptions);
+    }
+
+    public void clearDirection() {
+        polylineOptions = null;
+    }
 
     public XMap(Context context, GoogleMap mMap){
         this.context=context;
@@ -38,7 +75,13 @@ public class XMap {
     }
 
     public void getDirection(LatLng origin, LatLng dest, String google_map_key){
+        getDirection(origin, dest, google_map_key, null);
+    }
+
+    public void getDirection(LatLng origin, LatLng dest, String google_map_key, DirectionListener directionListener){
         String url = getRequestedUrl(origin, dest, google_map_key);
+
+        this.directionListener = directionListener;
 
         //adding our stringrequest to queue
         Volley.newRequestQueue(context).add(volleyRequest(url));
@@ -50,7 +93,6 @@ public class XMap {
             public void onResponse(String response) {
                 TaskParser taskParser = new TaskParser();
                 taskParser.execute(response);
-                //Toast.makeText(context, response, Toast.LENGTH_LONG).show();
             }},
                 new Response.ErrorListener() {
                     @Override
@@ -81,7 +123,7 @@ public class XMap {
             //ArrayList points = null;//try
             ArrayList<LatLng> points;
             //init polylineOptions
-            PolylineOptions polylineOptions = null;
+            polylineOptions = null;
             //polylineOptions = new PolylineOptions();
             if(lists!=null){
                 for(List<HashMap<String, String>> path : lists){
@@ -98,14 +140,14 @@ public class XMap {
                         }
                     }
                     polylineOptions.addAll(points);
-                    polylineOptions.width(15);
-                    polylineOptions.color(Color.BLUE);
+                    polylineOptions.width(directionWidth);
+                    polylineOptions.color(directionColor);
                     polylineOptions.geodesic(true);
                 }
             }
             if(polylineOptions!=null){
                 mMap.addPolyline(polylineOptions);
-                Toast.makeText(context, "Direction found!", Toast.LENGTH_SHORT).show();
+                if(directionListener!=null) directionListener.onDirectionReady();
             }else{
                 Toast.makeText(context, "Direction not found!", Toast.LENGTH_SHORT).show();
             }
