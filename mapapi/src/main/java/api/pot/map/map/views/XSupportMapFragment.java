@@ -1,4 +1,4 @@
-package api.pot.map.map;
+package api.pot.map.map.views;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -10,7 +10,7 @@ import android.widget.FrameLayout;
 
 import com.google.android.gms.maps.SupportMapFragment;
 
-public class TouchSupportMapFragment extends SupportMapFragment {
+public class XSupportMapFragment extends SupportMapFragment {
     public View mOriginalContentView;
     public TouchableWrapper mTouchView;
     private NonConsumingTouchListener mListener;

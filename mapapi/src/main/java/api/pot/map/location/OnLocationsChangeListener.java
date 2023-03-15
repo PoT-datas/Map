@@ -1,5 +1,6 @@
 package api.pot.map.location;
 
+import com.google.android.gms.location.LocationAvailability;
 import com.google.android.gms.maps.model.LatLng;
 
 public class OnLocationsChangeListener implements OnLocationsChangeInterface{
@@ -10,6 +11,11 @@ public class OnLocationsChangeListener implements OnLocationsChangeInterface{
 
     @Override
     public void onSpeedChange(double speed) {
+
+    }
+
+    @Override
+    public void onLocationAvailability(LocationAvailability locationAvailability) {
 
     }
 }

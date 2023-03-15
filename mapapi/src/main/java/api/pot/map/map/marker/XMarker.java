@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.os.Handler;
@@ -23,15 +24,28 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 
 public class XMarker {
+    private static long duration = 1000;
+    public static void setDuration(long duration) {
+        if(duration<=100) return;
+        XMarker.duration = duration;
+    }
+
+    public static long getDuration() {
+        return duration;
+    }
 
     public static void animateMarker(GoogleMap googleMap, final Marker marker, final LatLng toPosition,
                                      final MarkerAnimListener markerAnimListener, final boolean hideMarker) {
+        animateMarker(googleMap, marker, toPosition, markerAnimListener, hideMarker, duration);
+    }
+
+    public static void animateMarker(GoogleMap googleMap, final Marker marker, final LatLng toPosition,
+                                     final MarkerAnimListener markerAnimListener, final boolean hideMarker, final long duration) {
         final Handler handler = new Handler();
         final long start = SystemClock.uptimeMillis();
         Projection proj = googleMap.getProjection();
         Point startPoint = proj.toScreenLocation(marker.getPosition());
         final LatLng startLatLng = proj.fromScreenLocation(startPoint);
-        final long duration = 500;
 
         final Interpolator interpolator = new LinearInterpolator();
 
@@ -40,14 +54,18 @@ public class XMarker {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                long elapsed = SystemClock.uptimeMillis() - start;
-                float t = interpolator.getInterpolation((float) elapsed
-                        / duration);
-                double lng = t * toPosition.longitude + (1 - t)
-                        * startLatLng.longitude;
-                double lat = t * toPosition.latitude + (1 - t)
-                        * startLatLng.latitude;
-                marker.setPosition(new LatLng(lat, lng));
+                float t = 0;
+
+                try{
+                    long elapsed = SystemClock.uptimeMillis() - start;
+                    t = interpolator.getInterpolation((float) elapsed
+                            / duration);
+                    double lng = t * toPosition.longitude + (1 - t)
+                            * startLatLng.longitude;
+                    double lat = t * toPosition.latitude + (1 - t)
+                            * startLatLng.latitude;
+                    marker.setPosition(new LatLng(lat, lng));
+                }catch (Exception e){}
 
                 if (t < 1.0) {
                     // Post again 16ms later.
@@ -70,11 +88,12 @@ public class XMarker {
 
     public static Bitmap getIconeFromPath(String path, int color){
         return getIconeFromPath(path, color, 70, 100);
-    }
+    }/**
 
-    public static Bitmap getIconeFromBitmap(Bitmap bmp, int color){
-        return getIconeFromBitmap(bmp, color, 70, 100);
-    }
+    public static Bitmap getIconeFromBitmap(Bitmap bmp, int color, int strokeColor){
+        //return getIconeFromBitmap(bmp, color, 70, 100);
+        return getIconeFromBitmap(bmp, color, strokeColor, 100, 150);
+    }*/
 
     private static Paint paint;
     private static Paint paintBmp;
@@ -82,7 +101,7 @@ public class XMarker {
     private static RectF circle;
     private static Path path;
     private static int margin = 5;
-    private static int strock = 5;
+    private static int strock = 10;
     public static Bitmap getIconeFromPath(String pathIcone, int color, int width, int height){
         if(width<=0 || height<=0) return null;
         //
@@ -123,21 +142,137 @@ public class XMarker {
         //
         return icone;
     }
-    public static Bitmap getIconeFromBitmap(Bitmap bmp, int color, int width, int height){
+
+    public static Bitmap getIconeFromBitmap(Bitmap bmp, int color, int strokeColor, int width, int height, Path form){
+        if(width<=0 || height<=0 || bmp==null) return null;
+        ///---
+        ///---strock *= 2;
+        ///---
+        paint = new Paint();
+        paint.setStrokeWidth(strock);
+        paint.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+        ///
+        bound = new RectF(0+margin, 0+margin, width-margin, height-margin);
+        ///
+        float offL = bound.height()/4;
+        float offXl = bound.height()/3;
+        path = new Path();
+        path.moveTo(bound.left, bound.top);
+        path.lineTo(bound.right-offL, bound.top);
+        path.quadTo(bound.right, bound.top, bound.right, bound.top+offL);
+        path.lineTo(bound.right, bound.bottom);
+        path.quadTo(bound.right, bound.bottom-offXl, bound.right-offXl, bound.bottom-offXl);
+        path.lineTo(bound.left+offXl, bound.bottom-offXl);
+        path.quadTo(bound.left, bound.bottom-offXl, bound.left, bound.bottom-offXl-offL);
+        path.close();
+        ///
+        circle = new RectF(bound.left+strock*3, bound.top+strock*3, bound.right, bound.bottom-offXl);
+        ///
+        Bitmap icone = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas cvs = new Canvas(icone);
+        ///----
+        int save = cvs.save();
+        ///----
+        cvs.clipPath(form);
+        //
+        paint.setColor(color);
+        paint.setStyle(Paint.Style.FILL);
+        //
+        cvs.drawPath(path, paint);
+        //
+        paintBmp = new Paint();
+        paintBmp.setAntiAlias(true);
+        paintBmp.setStyle(Paint.Style.FILL);
+        /*paintBmp.setShader(new BitmapShader(getResizedBitmap(bmp,
+                (int) circle.width()-2*strock, (int) circle.height()-2*strock),
+                Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));*/
+        paintBmp.setMaskFilter(new BlurMaskFilter(strock*2, BlurMaskFilter.Blur.NORMAL));
+        //
+        ///---cvs.drawRect(circle, paintBmp);
+        cvs.drawBitmap(bmp, new Rect(0, 0, bmp.getWidth(), bmp.getHeight()),
+                new Rect( (0+strock), (0+strock), (cvs.getWidth()-strock), (int)(cvs.getHeight()-offXl-strock/2)), paintBmp);
+        ///---
+        cvs.restoreToCount(save);
+        //
+        paint.setColor(strokeColor);
+        paint.setStyle(Paint.Style.STROKE);
+        //
+        cvs.drawLine(bound.centerX(), bound.bottom, bound.centerX(), bound.bottom-bound.bottom/3, paint);
+        //
+        cvs.drawPath(form, paint);
+        ///---
+        return icone;
+    }
+
+    /**public static Bitmap getIconeFromBitmap(Bitmap bmp, int color, int strokeColor, int width, int height){
+        if(width<=0 || height<=0 || bmp==null) return null;
+        paint = new Paint();
+        paint.setStrokeWidth(strock);
+        paint.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+        ///
+        bound = new RectF(0+margin, 0+margin, width-margin, height-margin);
+        ///
+        float offL = bound.height()/4;
+        float offXl = bound.height()/3;
+        path = new Path();
+        path.moveTo(bound.left, bound.top);
+        path.lineTo(bound.right-offL, bound.top);
+        path.quadTo(bound.right, bound.top, bound.right, bound.top+offL);
+        path.lineTo(bound.right, bound.bottom);
+        path.quadTo(bound.right, bound.bottom-offXl, bound.right-offXl, bound.bottom-offXl);
+        path.lineTo(bound.left+offXl, bound.bottom-offXl);
+        path.quadTo(bound.left, bound.bottom-offXl, bound.left, bound.bottom-offXl-offL);
+        path.close();
+        ///
+        circle = new RectF(bound.left+strock*3, bound.top+strock*3, bound.right, bound.bottom-offXl);
+        ///
+        Bitmap icone = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas cvs = new Canvas(icone);
+        ///----
+        int save = cvs.save();
+        ///----
+        cvs.clipPath(path);
+        //
+        paint.setColor(color);
+        paint.setStyle(Paint.Style.FILL);
+        //
+        cvs.drawPath(path, paint);
+        //
+        paintBmp = new Paint();
+        paintBmp.setAntiAlias(true);
+        paintBmp.setStyle(Paint.Style.FILL);
+        paintBmp.setMaskFilter(new BlurMaskFilter(strock*2, BlurMaskFilter.Blur.NORMAL));
+        //
+        ///---cvs.drawRect(circle, paintBmp);
+        cvs.drawBitmap(bmp, new Rect(0, 0, bmp.getWidth(), bmp.getHeight()),
+                new Rect( (0+strock), (0+strock), (cvs.getWidth()-strock), (int)(cvs.getHeight()-offXl-strock)), paintBmp);
+        //
+        paint.setColor(strokeColor);
+        paint.setStyle(Paint.Style.STROKE);
+        //
+        cvs.drawPath(path, paint);
+        ///---
+        cvs.restoreToCount(save);
+        ///---
+        return icone;
+    }*/
+
+    /*public static Bitmap getIconeFromBitmap(Bitmap bmp, int color, int width, int height){
         if(width<=0 || height<=0 || bmp==null) return null;
         //
         paint = new Paint();
         paint.setStrokeWidth(strock);
         paint.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
-        //
+        ///
         bound = new RectF(0+margin, 0+margin, width-margin, height-margin);
+        ///
         path = new Path();
         path.moveTo(bound.left, bound.centerY());
         circle = new RectF(bound.left, bound.top, bound.right, bound.top+bound.width());
         path.addArc(circle, 150, 240);
         path.lineTo(bound.centerX(), bound.bottom);
         path.close();
-        //
+        ///
         Bitmap icone = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas cvs = new Canvas(icone);
         //
@@ -162,7 +297,7 @@ public class XMarker {
         cvs.drawPath(path, paint);
         //
         return icone;
-    }
+    }*/
 
     public static Bitmap getResizedBitmap(Bitmap originalBitmap, int newWidth, int newHeight){
         if(originalBitmap==null) return null;
@@ -215,34 +350,30 @@ public class XMarker {
         return inSampleSize;
     }
 
-    public static double distance(Marker point1, Marker point2) {
-        return distance(point1.getPosition(), point2.getPosition());
-    }
-
-    public static double distance(LatLng point1, LatLng point2) {
-        return distance(point1.latitude, point1.longitude, point2.latitude, point2.longitude);
-    }
-
-    /**
-     * @return distance in miles*/
-    public static double distance(double lat1, double lon1, double lat2, double lon2) {
-        double theta = lon1 - lon2;
-        double dist = Math.sin(deg2rad(lat1))
-                * Math.sin(deg2rad(lat2))
-                + Math.cos(deg2rad(lat1))
-                * Math.cos(deg2rad(lat2))
-                * Math.cos(deg2rad(theta));
-        dist = Math.acos(dist);
-        dist = rad2deg(dist);
-        dist = dist * 60 * 1.1515;
-        return (dist);
-    }
-
-    private static double deg2rad(double deg) {
-        return (deg * Math.PI / 180.0);
-    }
-
-    private static double rad2deg(double rad) {
-        return (rad * 180.0 / Math.PI);
+    public static Bitmap getPlotBitmap(int width, int height, int color) {
+        Bitmap icone = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas cvs = new Canvas(icone);
+        ///
+        float soft = width/20;
+        ///
+        RectF bound = new RectF(0+soft, 0+soft, width-soft, height-soft);
+        Paint paint = new Paint();
+        paint.setColor(color);
+        ///
+        paint.setMaskFilter(new BlurMaskFilter(soft/5, BlurMaskFilter.Blur.NORMAL));
+        paint.setShadowLayer(soft,soft/3, soft, Color.BLACK);
+        ///
+        cvs.drawCircle(bound.centerX(), bound.top+bound.height()/3, bound.top+bound.height()/4, paint);
+        ///
+        Path path = new Path();
+        path.moveTo(bound.centerX(), bound.bottom);
+        path.rLineTo(-bound.width()/4, -bound.width()/3);
+        path.rLineTo(bound.width()/4, bound.width()/5);
+        path.rLineTo(bound.width()/4, -bound.width()/5);
+        path.close();
+        ///
+        cvs.drawPath(path, paint);
+        ///
+        return icone;
     }
 }

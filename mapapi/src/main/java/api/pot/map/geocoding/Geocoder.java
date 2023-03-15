@@ -46,7 +46,7 @@ public abstract class Geocoder {
 
 
 
-	public void fetch(final Callback callback) {
+	public void fetch(final GeocodingListener callback) {
 		OkHttpClient httpClient = new OkHttpClient.Builder()
 				.addInterceptor(new HttpLoggingInterceptor().setLevel(loggingLevel))
 				.build();
@@ -63,7 +63,7 @@ public abstract class Geocoder {
 
 		httpClient.newCall(request).enqueue(new okhttp3.Callback() {
 			Handler handler = new Handler(Looper.getMainLooper());
-			@Override
+			/*@Override
 			public void onFailure(Request request, final IOException e) {
 				handler.post(new Runnable() {
 					@Override
@@ -100,9 +100,9 @@ public abstract class Geocoder {
 				catch (JSONException e) {
 					throw new IOException(e.getMessage());
 				}
-			}
+			}*/
 
-			/*public void onFailure(Call call, final IOException e) {
+			public void onFailure(Call call, final IOException e) {
 				handler.post(new Runnable() {
 					@Override
 					public void run() {
@@ -137,7 +137,7 @@ public abstract class Geocoder {
 				catch (JSONException e) {
 					throw new IOException(e.getMessage());
 				}
-			}*/
+			}
 		});
 	}
 }

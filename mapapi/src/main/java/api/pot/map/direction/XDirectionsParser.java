@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-@SuppressWarnings("unchecked")
 public class XDirectionsParser {
     public List<List<HashMap<String, String>>> parse(JSONObject jObject) {
 
