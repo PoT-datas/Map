@@ -8,6 +8,8 @@ import android.net.ProxyInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -26,11 +28,15 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.XMLFormatter;
 
 import api.pot.map.direction.DirectionListener;
 import api.pot.map.direction.XDirection;
 import api.pot.map.direction.XDirectionsParser;
 import api.pot.map.map.camera.XCamera;
+import api.pot.map.map.listener.XMapCallback;
+import api.pot.map.map.listener.XMapFragmentListener;
+import api.pot.map.map.listener.XMapListener;
 import api.pot.map.navigation.XNavigation;
 
 public class XMap {
@@ -52,6 +58,11 @@ public class XMap {
     public static int ZOOM_LEVEL_NAVIGATION = 19;
     public static int ZOOM_LEVEL_BUILDINGS = 20;
 
+    private XMapFragmentListener mapFragmentListener;
+    public void setMapFragmentListener(XMapFragmentListener mapFragmentListener) {
+        this.mapFragmentListener = mapFragmentListener;
+    }
+
     public XMap(Context context, GoogleMap mMap, String googleKeyApi){
         this.context=context;
         this.mMap = mMap;
@@ -59,6 +70,7 @@ public class XMap {
         camera = new XCamera(this, this.context, this.mMap);
         direction = new XDirection(this, this.context, this.mMap);
         navigation = new XNavigation(this, this.context, this.mMap);
+        initGesture(context);
     }
 
     public Boolean setMapStyle(int json_style){
@@ -85,5 +97,32 @@ public class XMap {
 
     public void setMapListener(MapListener mapListener) {
         this.mapListener = mapListener;
+    }
+
+
+
+    private GestureDetector gestureDetector;
+
+    private void initGesture(Context context) {
+        gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener(){
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                return true;
+            }
+
+            @Override
+            public boolean onDown(MotionEvent e) {
+                return super.onDown(e);
+            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                return super.onFling(e1, e2, velocityX, velocityY);
+            }
+        });
+    }
+
+    public void onFragmentTouch(MotionEvent event) {
+        if (gestureDetector!=null)gestureDetector.onTouchEvent(event);
     }
 }

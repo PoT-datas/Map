@@ -2,6 +2,7 @@ package api.pot.map.map.views;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -50,4 +51,5 @@ public class XSupportMapFragment extends SupportMapFragment {
             return super.dispatchTouchEvent(event);
         }
     }
+
 }

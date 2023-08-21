@@ -62,7 +62,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        xMap = new XMap(this, mMap);
+        xMap = new XMap(this, mMap, getResources().getString(R.string.google_map_key));
 
         //Map Listener
         mapListener();
@@ -107,7 +107,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 //TODO: request get direction code bellow
                 if( listPoints.size()==2 ){
                     //get direction
-                    xMap.getDirection(listPoints.get(0), listPoints.get(1), getResources().getString(R.string.google_map_key));
+                    xMap.direction.getDirection(listPoints.get(0), listPoints.get(1), getResources().getString(R.string.google_map_key));
                 }
             }
         });

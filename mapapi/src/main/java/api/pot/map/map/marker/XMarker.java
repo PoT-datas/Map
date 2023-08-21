@@ -376,4 +376,31 @@ public class XMarker {
         ///
         return icone;
     }
+
+    public static Bitmap getRoadBitmap(int width, int height, int color) {
+        Bitmap icone = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas cvs = new Canvas(icone);
+        ///
+        float soft = width/20;
+        ///
+        RectF bound = new RectF(0+soft, 0+soft, width-soft, height-soft);
+        Paint paint = new Paint();
+        paint.setColor(color);
+        ///
+        paint.setMaskFilter(new BlurMaskFilter(soft/5, BlurMaskFilter.Blur.NORMAL));
+        paint.setShadowLayer(soft,soft/3, soft, Color.BLACK);
+        ///
+        cvs.drawCircle(bound.centerX(), bound.centerY(), bound.height()/2, paint);
+        ///
+        /**Path path = new Path();
+        path.moveTo(bound.centerX(), bound.bottom);
+        path.rLineTo(-bound.width()/4, -bound.width()/3);
+        path.rLineTo(bound.width()/4, bound.width()/5);
+        path.rLineTo(bound.width()/4, -bound.width()/5);
+        path.close();
+        ///
+        cvs.drawPath(path, paint);*/
+        ///
+        return icone;
+    }
 }

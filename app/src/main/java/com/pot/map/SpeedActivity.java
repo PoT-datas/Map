@@ -41,7 +41,7 @@ public class SpeedActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (!runtime_permissions()) {
-            XLocation.activity(this)
+            XLocation.with(this)
                     .setLocationsChangeListener(new OnLocationsChangeListener(){
                 @Override
                 public void onLocationChange(LatLng latLng) {
@@ -60,7 +60,7 @@ public class SpeedActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        XLocation.removeLocationUpdates();
+        XLocation.with(this).removeLocationUpdates();
     }
 
 

@@ -141,6 +141,28 @@ public class XCamera {
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+    public XCamera mMoveUp(double angle){
+        mTarget(new LatLng(getTarget().latitude+angle, getTarget().longitude));
+        return this;
+    }
+
+    public XCamera mMoveDown(double angle){
+        mTarget(new LatLng(getTarget().latitude-angle, getTarget().longitude));
+        return this;
+    }
+
+    public XCamera mMoveLeft(double angle){
+        mTarget(new LatLng(getTarget().latitude, getTarget().longitude-angle));
+        return this;
+    }
+
+    public XCamera mMoveRight(double angle){
+        mTarget(new LatLng(getTarget().latitude, getTarget().longitude+angle));
+        return this;
+    }
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
     public XCamera mTarget(List<LatLng> polygon){
         if(polygon==null||polygon.isEmpty()) return this;
         LatLng center = polygon.get(0), left = polygon.get(0), top = polygon.get(0), right = polygon.get(0), bottom = polygon.get(0);
@@ -356,17 +378,17 @@ public class XCamera {
     private LatLng myLoc;
     private Handler locHandle;
     public void myLocation(final LatLng myLocation) {
-        target(XLocation.getMyLocationLatLon(context));
-        updateCamera();
+        target(myLocation!=null?myLocation:XLocation.getMyLocationLatLon(context))
+                .updateCamera();
         myLoc = myLocation;
-        if(camListener!=null) camListener.myLocationChange(myLoc);
-        locHandle.removeCallbacksAndMessages(null);
+        if(camListener!=null) camListener.myLocationChange(myLocation);
+        /***locHandle.removeCallbacksAndMessages(null);
         locHandle.postDelayed(new Runnable() {
             @Override
             public void run() {
                 myLocation(myLoc);
             }
-        }, NO_TARGET_MY_LOC_DEFAULT_DURR/3);
+        }, NO_TARGET_MY_LOC_DEFAULT_DURR/3);*/
     }
 
 

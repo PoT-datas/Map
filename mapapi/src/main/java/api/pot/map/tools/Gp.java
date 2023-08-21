@@ -2,20 +2,23 @@ package api.pot.map.tools;
 
 import android.content.Context;
 import android.os.Handler;
+import android.util.Log;
+import android.widget.Toast;
 
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import api.pot.map.geocoding.Models.Coordinate;
-import api.pot.map.geocoding.Result;
 
 /**
  * Geo Positionning*/
@@ -277,6 +280,293 @@ public class Gp {
         return PolyUtil.containsLocation(point, polygon, true);
     }
 
+    public static List<Interception> calculateInterceptions(GoogleMap mMap, List<LatLng> p1, List<LatLng> p2){
+        List<Segment> segments = new ArrayList<>();
+        List<Interception> interceptions = new ArrayList<>();
+
+        int n = p1.size();
+        int m = p2.size();
+        for(int i=0;i<n;i++){
+            if(polygonContains(p1.get(i), p2)!=polygonContains(p1.get((i+1)%n), p2)) {
+                segments.add(new Segment(p1, i, (i+1)%n));
+
+                mMap.addMarker(new MarkerOptions().position(p1.get(i))
+                        .title("segment")
+                        .snippet("Description")
+                        .alpha(0.5f)
+                        .zIndex(0.5f)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                mMap.addMarker(new MarkerOptions().position(p1.get((i+1)%n))
+                        .title("segment")
+                        .snippet("Description")
+                        .alpha(0.5f)
+                        .zIndex(0.5f)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+            }
+        }
+
+        Segment segment;
+        for(int i=0;i<m;i++){
+            segment = new Segment(p2, i, (i+1)%m);
+            for(int k=0;k<segments.size();k++){
+                if(!segments.get(k).intercepted && segment.intercept(segments.get(k))) {
+                    interceptions.add(new Interception(segments.get(k), segment));
+                    segments.get(k).intercepted = true;
+
+                    mMap.addMarker(new MarkerOptions().position(segment.polygon.get(segment.i))
+                            .title("segment2")
+                            .snippet("Description")
+                            .alpha(0.5f)
+                            .zIndex(0.5f)
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                    mMap.addMarker(new MarkerOptions().position(segment.polygon.get(segment.j))
+                            .title("segment2")
+                            .snippet("Description")
+                            .alpha(0.5f)
+                            .zIndex(0.5f)
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                }
+            }
+        }
+
+        return interceptions;
+    }
+
+    static int nexter = 0;
+    public static List<LatLng> calculatePolygonBounds(GoogleMap mMap, List<LatLng>... polygons){
+        try {
+            if(polygons==null||polygons.length<2) {
+                if(polygons!=null&&polygons.length==1) return polygons[0];
+                else return null;
+            }
+            List<List<LatLng>> P = new ArrayList<>();
+            for(int i=0;i<polygons.length;i++)
+                P.add(polygons[i]);
+            List<LatLng> b;
+            List<LatLng> bounds = P.get(0);
+            int n = P.size();
+            nexter = 0;
+            for(int i=1;i<P.size();i++) {
+                b = getPolygonBounds(mMap, bounds, P.get(i));
+                if(b==null){
+                    P.add(P.get(i));
+                    P.remove(i);
+                    i--;
+                    nexter++;
+                }else {
+                    bounds = b;
+                    if(nexter!=0) nexter = 0;
+                }
+                if(nexter==(n-i+2)) break;
+            }
+            return bounds;
+        }catch (Exception e){}
+        return null;
+    }
+
+    public static List<LatLng> calculatePolygonBounds2(GoogleMap mMap, List<LatLng>... polygons){
+        try {
+            if(polygons==null||polygons.length<2) {
+                if(polygons!=null&&polygons.length==1) return polygons[0];
+                else return null;
+            }
+            List<LatLng> bounds = polygons[0];
+            for(int i=1;i<polygons.length;i++)
+                bounds = getPolygonBounds(mMap, bounds, polygons[i]);
+            return bounds;
+        }catch (Exception e){}
+        return null;
+    }
+
+    public static List<LatLng> getPolygonBounds(GoogleMap mMap, List<LatLng> p1, List<LatLng> p2){
+        return getPolygonBounds(mMap,
+                calculateInterceptions(mMap, p1, p2));
+    }
+
+    public static List<LatLng> getPolygonBounds(GoogleMap mMap, List<Interception> interceptions){
+        if(interceptions==null||interceptions.size()<2) return null;
+
+        List<Interception> extremums = getExtremumInterceptions(interceptions);
+        List<LatLng> p = new ArrayList<>();
+
+        Toast.makeText(context, cmp+"::: \n"+interceptions.size()+" i|e "+extremums.size(), Toast.LENGTH_SHORT).show();
+
+        ///---Toast.makeText(context, "|"+interceptions.size(), Toast.LENGTH_SHORT).show();
+
+        if(extremums==null||extremums.size()<2) return null;
+
+        ///---testing
+        /**if(extremums.get(0).segment2.i==0||
+                extremums.get(1).segment2.i==0||
+                extremums.get(1).segment1.i==0||
+                extremums.get(0).segment1.i==0) Collections.reverse(extremums);*/
+
+        int i, j;
+        List<LatLng> p1 = extremums.get(0).segment1.polygon, p2 = extremums.get(0).segment2.polygon;
+        //
+        p.add(extremums.get(0).location);
+        i = extremums.get(0).segment2.i;
+        j = extremums.get(1).segment2.i;
+        p.addAll(subPolygon(p2, i, j));
+        //
+        p.add(extremums.get(1).location);
+        i = extremums.get(1).segment1.i;
+        j = extremums.get(0).segment1.i;
+        p.addAll(subPolygon(p1, i, j));
+        //
+        cmp++;
+        ///---
+        //closing
+        if(p.size()>0) p.add(p.get(0));
+        //
+        return p;
+    }
+
+    public static Context context;
+    private static int cmp = 0;
+    private static List<LatLng> subPolygon(List<LatLng> p1, int i, int j) {
+        ///---Toast.makeText(context, p1.size()+" : "+i+"|"+j, Toast.LENGTH_SHORT).show();
+        List<LatLng> p = new ArrayList<>();
+        int k, n = p1.size();
+        if(0<=i&&i<=j||i==0/**||j==0*/){
+            if(i<j){
+                for(k=i;k<j;k++)
+                    p.add(p1.get(k%n));
+            }else if(i>j){
+                for(k=i;k>j;k--)
+                    p.add(p1.get(k%n));
+            }
+            ///---Toast.makeText(context, "up", Toast.LENGTH_SHORT).show();
+        }else {
+            if(i<j){
+                for(k=j;k<n+i;k++)
+                    p.add(p1.get(k%n));
+            }else if(i>j){
+                for(k=i;k<n+j;k++)
+                    p.add(p1.get(k%n));
+            }
+            ///---Toast.makeText(context, "down", Toast.LENGTH_SHORT).show();
+        }
+        return p;
+    }
+
+    public static List<Interception> getExtremumInterceptions(List<Interception> interceptions){
+        List<Interception> extremums = new ArrayList<>();
+        double d;
+        double dMax=0;
+        int n = interceptions.size();
+        /**
+         * une combinaison de la listes des inters sera pas utile car les extremes sont cotes à cote
+         */
+        for(int i=0;i<n;i++){
+            d = minDistance(interceptions.get(i).segment1.i, interceptions.get((i+1)%n).segment1.i, interceptions.get(i).segment1.polygon);
+            if(d>=dMax){
+                dMax = d;
+                extremums = new ArrayList<>();
+                if((i+1)%n>i){
+                    extremums.add(interceptions.get((i+1)%n));
+                    extremums.add(interceptions.get(i));
+                }else {
+                    extremums.add(interceptions.get(i));
+                    extremums.add(interceptions.get((i+1)%n));
+                }
+            }
+        }
+        ///---
+        if(interceptions.size()>1 && extremums.size()==0){
+            extremums.add(interceptions.get(0));
+            extremums.add(interceptions.get(1));
+        }
+        ///---sense---calcul de la surface minimale
+        if(extremums.size()>1){
+            int i = extremums.get(0).segment1.i;
+            int j = extremums.get(1).segment1.i;
+            int i2 = extremums.get(0).segment2.i;
+            int j2 = extremums.get(1).segment2.i;
+            ///---
+            /**if(iDistance(i2, j2, extremums.get(0).segment2.polygon)<
+                    iDistance(j2, i2, extremums.get(0).segment2.polygon))///attention à cette condition.!!
+                Collections.reverse(extremums);*/
+            List<LatLng> p1 = extremums.get(0).segment1.polygon;
+            List<LatLng> p2 = extremums.get(0).segment2.polygon;
+            int n2 = p2.size();
+            if(i2<=j2){
+                /**if( polygonContains(p2.get(i2+(j2-i2)/2), p1) )
+                    Collections.reverse(extremums);*/
+                if( distance(p2.get(i2+(j2-i2)/2), p1)<distance(p2.get((j2+(n2+i2-j2)/2)%n2), p1) )
+                    Collections.reverse(extremums);
+            }else {
+                /**if( polygonContains(p2.get((i2+(n2+j2-i2)/2)%n2), p1) )
+                    Collections.reverse(extremums);*/
+                if( distance(p2.get((i2+(n2+j2-i2)/2)%n2), p1)<distance(p2.get(j2+(i2-j2)/2), p1) )
+                    Collections.reverse(extremums);
+            }
+        }
+        ///---
+        return extremums;
+    }
+
+    public static double distance(LatLng point, List<LatLng> polygon) {
+        try {
+            return distance(point, findNearestPoint(point, polygon).spot);
+        }catch (Exception e){}
+        return -1;
+    }
+
+    public static double distance(LatLng center, List<LatLng> p1, List<LatLng> p2) {
+        try {
+            return distance(findNearestPoint(center, p1).spot, findNearestPoint(center, p2).spot);
+        }catch (Exception e){}
+        return -1;
+    }
+
+    public static int iDistance(int i, int j, List<LatLng> p) {
+        int n = p.size();
+        if(i<=j){
+            return j-i+1;
+        }else {
+            return (n-i)+j+1;
+        }
+    }
+
+    private static double minDistance(int i, int j, List<LatLng> p) {
+        return Math.min(distance(i, j, p), distance(j, i, p));
+    }
+
+    private static double distance(int i, int j, List<LatLng> p) {
+        if(i>=p.size()||j>=p.size())
+            return -1;
+        int k;
+        double some = 0;
+        int n = p.size();
+        if(i<j){
+            for(k=i;k<j;k++)
+                some+=distance(p.get(k), p.get(k+1));
+        }else if(i>j){
+            for(k=i;k<n+j;k++)
+                some+=distance(p.get(k%n), p.get((k+1)%n));
+        }
+        return some;
+    }
+
+    /**private void createSurroundingPolygon(List<LatLng> polygonPath) {
+        List<Coordinate> coordinates = new ArrayList<>();
+        for (LatLng latLng : polygonPath) {
+            coordinates.add(new Coordinate(latLng.longitude, latLng.latitude));
+        }
+
+        GeometryFactory factory = new GeometryFactory();
+        Geometry lineString = factory.createLineString(coordinates.toArray(new Coordinate[coordinates.size()]));
+        Polygon polygon = (Polygon) BufferOp.bufferOp(lineString, 0.0001);
+
+        Coordinate[] coordinatesSurroundingPolygon = polygon.getExteriorRing().getCoordinates();
+        List<LatLng> surroundingPolygon = new ArrayList<>();
+        for (int i = 0; i < coordinatesSurroundingPolygon.length; i++) {
+            surroundingPolygon.add(new LatLng(coordinatesSurroundingPolygon[i].y, coordinatesSurroundingPolygon[i].x));
+        }
+        ///drawPolygon(surroundingPolygon);
+    }*/
+
     /**Location from = new Location(LocationManager.GPS_PROVIDER);
         Location to = new Location(LocationManager.GPS_PROVIDER);
         from.setLatitude(org.latitude);
@@ -349,4 +639,15 @@ public class Gp {
         return meters*0.000621d;
     }
 
+    public static LatLng findLocationMiddle(List<LatLng> p) {
+        if(p.size()==0) return null;
+        try {
+            return findNearestPoint(getMiddle(p.get(0), p.get(p.size()-1)), p).spot;
+        }catch (Exception e){}
+        return p.get(0);
+    }
+
+    private static LatLng getMiddle(LatLng A, LatLng B) {
+        return new LatLng((A.latitude+B.latitude)/2, (A.longitude+B.longitude)/2);
+    }
 }
