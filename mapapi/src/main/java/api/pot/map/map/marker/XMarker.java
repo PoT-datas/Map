@@ -101,7 +101,7 @@ public class XMarker {
     private static RectF circle;
     private static Path path;
     private static int margin = 5;
-    private static int strock = 10;
+    private static int strock = 5;
     public static Bitmap getIconeFromPath(String pathIcone, int color, int width, int height){
         if(width<=0 || height<=0) return null;
         //
